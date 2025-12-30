@@ -1,0 +1,5 @@
+{
+  "name": "ProReport GenAI",
+  "description": "Professional Feasibility Study Report Generator powered by Gemini 2.5",
+  "requestFramePermissions": []
+}

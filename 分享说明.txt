@@ -1,0 +1,56 @@
+========================================
+ProReport GenAI 应用分享包
+========================================
+
+📦 文件：proreport-genai-share.zip
+
+✅ 已包含内容：
+  - 所有源代码文件
+  - 配置文件（package.json, tsconfig.json 等）
+  - 使用说明文档（README.md, QUICKSTART.md）
+  - API Key 配置示例（.env.local.example）
+
+❌ 已排除内容（安全考虑）：
+  - .env.local（你的 API key）
+  - node_modules（依赖包，需要重新安装）
+  - dist（构建输出）
+
+========================================
+朋友接收后的安装步骤
+========================================
+
+1. 解压 ZIP 文件到任意目录
+
+2. 打开命令行，进入解压后的目录：
+   cd proreport-genai-share
+
+3. 安装依赖：
+   npm install
+
+4. 配置 API Key：
+   - 复制 .env.local.example 文件，重命名为 .env.local
+   - 打开 .env.local，填入朋友的 Gemini API Key
+   - 获取 API Key：https://aistudio.google.com/app/apikey
+
+5. 运行应用：
+   npm run dev
+
+6. 访问应用：
+   打开浏览器访问 http://localhost:3000
+
+========================================
+重要提醒
+========================================
+
+⚠️ 每个用户需要：
+  - 使用自己的 Gemini API Key
+  - 自己安装依赖（npm install）
+  - 管理自己的 API 使用配额
+
+📖 详细说明请查看：
+  - README.md（完整使用指南）
+  - QUICKSTART.md（快速开始）
+  - SHARING_GUIDE.md（分享指南）
+
+========================================
+

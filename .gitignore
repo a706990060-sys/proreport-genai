@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+server/node_modules/
+
+# Build outputs
+dist/
+server/dist/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+server/.env
+server/.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Data files
+server/data/
+*.db
+*.sqlite
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Share packages
+ProReport-GenAI-分享版/
+*.zip
+
+# Test coverage
+coverage/
+.nyc_output/

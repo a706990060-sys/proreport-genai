@@ -1,0 +1,303 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>可研报告生成工具 (Pro版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Noto Sans SC', sans-serif; 
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        /* Print styles for export */
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white; height: auto; overflow: visible; }
+            #output-container { overflow: visible; height: auto; margin: 0; box-shadow: none; border: none; }
+            .prose { max-width: 100%; }
+        }
+
+        /* Custom Scrollbar for a cleaner look */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgba(156, 163, 175, 0.3);
+            border-radius: 20px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(156, 163, 175, 0.5);
+        }
+
+        /* --- Built-in Hierarchy Format: "Professional Template" --- */
+        .format-mode-pro {
+            line-height: 1.8 !important;
+            font-size: 18px !important; 
+            color: #1f2937;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+        }
+        
+        /* Level 2 (Section Title) - Centered, No Indent */
+        .format-mode-pro h2 {
+            text-align: center !important;
+            text-indent: 0 !important;
+            margin-top: 1.2em !important;
+            margin-bottom: 0.8em !important;
+            font-weight: 700 !important;
+            color: #111827;
+            line-height: 1.4 !important;
+            font-size: 1.5em !important;
+        }
+
+        /* Level 3 (H3) and below (H4-H6, P) - Indented 2em */
+        .format-mode-pro h3 {
+            text-align: left !important;
+            text-indent: 2em !important;
+            margin-top: 1.2em !important;
+            margin-bottom: 0.8em !important;
+            font-weight: 700 !important;
+            color: #111827;
+            line-height: 1.4 !important;
+            font-size: 1.25em !important;
+        }
+
+        .format-mode-pro h4,
+        .format-mode-pro h5,
+        .format-mode-pro h6 {
+            text-indent: 2em;
+            font-weight: 700 !important;
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+            font-size: 1em !important;
+            text-align: left;
+        }
+
+        /* Paragraphs - The main body text */
+        .format-mode-pro p {
+            text-indent: 2em;
+            margin-bottom: 1em;
+            text-align: justify;
+            text-justify: inter-ideograph; /* Optimized for CJK text */
+            text-align-last: left; /* Prevents short lines from spreading apart */
+        }
+
+        /* Lists - Correct indentation */
+        .format-mode-pro ul, 
+        .format-mode-pro ol {
+            margin-left: 2em;
+            margin-bottom: 1em;
+            padding-left: 1.5em;
+        }
+        
+        .format-mode-pro li {
+            margin-bottom: 0.5em;
+            text-align: justify;
+        }
+        
+        .format-mode-pro li p {
+            text-indent: 0 !important; /* Reset nested p indent in lists */
+            display: inline;
+        }
+
+        /* Tables */
+        .format-mode-pro table {
+            text-indent: 0 !important;
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5em 0;
+            font-size: 0.9em;
+        }
+        
+        .format-mode-pro table th,
+        .format-mode-pro table td {
+            text-indent: 0 !important;
+            border: 1px solid #e5e7eb;
+            padding: 10px 8px;
+            text-align: left;
+        }
+        
+        .format-mode-pro table th {
+            background-color: #f9fafb;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        /* Source Section - No indent */
+        .format-mode-pro .source-section,
+        .format-mode-pro .source-section p,
+        .format-mode-pro .source-section li {
+            text-indent: 0 !important;
+            font-size: 12px !important;
+            text-align: left !important;
+        }
+
+        /* --- NEW HIGH-END COVER STYLES --- */
+        
+        /* Moving Grid Background */
+        .cover-bg {
+            background-color: #000;
+            background-image: 
+                linear-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            perspective: 500px;
+            overflow: hidden;
+        }
+        
+        .cover-grid-plane {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background-image: 
+                linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+            background-size: 60px 60px;
+            transform: rotateX(60deg) translateY(0);
+            animation: grid-move 20s linear infinite;
+            mask-image: linear-gradient(to bottom, transparent 0%, black 40%, black 100%);
+            z-index: 0;
+        }
+
+        @keyframes grid-move {
+            0% { transform: rotateX(60deg) translateY(0); }
+            100% { transform: rotateX(60deg) translateY(60px); }
+        }
+
+        /* The 3D Reactor */
+        .reactor-container {
+            width: 400px;
+            height: 400px;
+            position: relative;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+
+        .reactor-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            transform-style: preserve-3d;
+        }
+
+        /* Ring 1: Outer Static-ish */
+        .r-1 {
+            width: 380px;
+            height: 380px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+            animation: rotate-z 60s linear infinite;
+        }
+
+        /* Ring 2: Gyro X */
+        .r-2 {
+            width: 320px;
+            height: 320px;
+            border: 2px solid rgba(59, 130, 246, 0.4);
+            border-left-color: transparent;
+            border-right-color: transparent;
+            animation: rotate-gyro-1 8s linear infinite;
+        }
+
+        /* Ring 3: Gyro Y */
+        .r-3 {
+            width: 280px;
+            height: 280px;
+            border: 1px dashed rgba(139, 92, 246, 0.6);
+            animation: rotate-gyro-2 12s linear infinite reverse;
+        }
+
+        /* Ring 4: Inner Glow */
+        .r-4 {
+            width: 200px;
+            height: 200px;
+            border: 4px solid rgba(59, 130, 246, 0.1);
+            border-top: 4px solid #3b82f6;
+            filter: drop-shadow(0 0 10px #3b82f6);
+            animation: rotate-z 4s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+        }
+
+        /* The Core */
+        .reactor-core {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle, #fff 0%, #3b82f6 40%, transparent 80%);
+            border-radius: 50%;
+            box-shadow: 0 0 50px rgba(59, 130, 246, 0.8), 0 0 100px rgba(139, 92, 246, 0.4);
+            animation: core-pulse 3s ease-in-out infinite;
+        }
+
+        /* Animations */
+        @keyframes rotate-z {
+            0% { transform: translate(-50%, -50%) rotateZ(0deg); }
+            100% { transform: translate(-50%, -50%) rotateZ(360deg); }
+        }
+
+        @keyframes rotate-gyro-1 {
+            0% { transform: translate(-50%, -50%) rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+            100% { transform: translate(-50%, -50%) rotateX(360deg) rotateY(180deg) rotateZ(90deg); }
+        }
+
+        @keyframes rotate-gyro-2 {
+            0% { transform: translate(-50%, -50%) rotateX(0deg) rotateY(0deg); }
+            100% { transform: translate(-50%, -50%) rotateX(-180deg) rotateY(360deg); }
+        }
+
+        @keyframes core-pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+            50% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+        }
+        
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .glass-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(59, 130, 246, 0.5);
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.3), inset 0 0 20px rgba(59, 130, 246, 0.1);
+            letter-spacing: 0.1em;
+        }
+
+        .text-glow {
+            text-shadow: 0 0 40px rgba(59, 130, 246, 0.4);
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-slate-50 h-screen overflow-hidden text-sm text-slate-700">
+    <div id="root" class="h-full flex flex-col"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>

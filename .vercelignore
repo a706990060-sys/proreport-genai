@@ -1,0 +1,10 @@
+server/
+node_modules/
+*.log
+.env
+.env.local
+proreport-genai-extracted/
+proreport-genai-share/
+*.zip
+data/
+
