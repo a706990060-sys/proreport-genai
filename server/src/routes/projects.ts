@@ -42,9 +42,14 @@ router.post('/', async (req: AuthRequest, res) => {
             history: []
         };
 
-        const projects = await projectStorage.getAll(req.userId!);
-        projects.push(project);
-        await projectStorage.save(req.userId!, projects);
+        // 使用create方法（如果支持）或save方法
+        if (projectStorage.create) {
+            await projectStorage.create(project);
+        } else {
+            const projects = await projectStorage.getAll(req.userId!);
+            projects.push(project);
+            await projectStorage.save(req.userId!, projects);
+        }
 
         res.json({ success: true, data: project });
     } catch (error: any) {
@@ -62,7 +67,7 @@ router.put('/:id', async (req: AuthRequest, res) => {
             return res.status(404).json({ success: false, error: '项目不存在' });
         }
 
-        projects[index] = {
+        const updatedProject: Project = {
             ...projects[index],
             ...req.body,
             id: req.params.id,
@@ -70,8 +75,15 @@ router.put('/:id', async (req: AuthRequest, res) => {
             lastModified: Date.now()
         };
 
-        await projectStorage.save(req.userId!, projects);
-        res.json({ success: true, data: projects[index] });
+        // 使用update方法（如果支持）或save方法
+        if (projectStorage.update) {
+            await projectStorage.update(updatedProject);
+            res.json({ success: true, data: updatedProject });
+        } else {
+            projects[index] = updatedProject;
+            await projectStorage.save(req.userId!, projects);
+            res.json({ success: true, data: updatedProject });
+        }
     } catch (error: any) {
         res.status(500).json({ success: false, error: error.message });
     }
@@ -80,9 +92,14 @@ router.put('/:id', async (req: AuthRequest, res) => {
 // 删除项目
 router.delete('/:id', async (req: AuthRequest, res) => {
     try {
-        const projects = await projectStorage.getAll(req.userId!);
-        const filtered = projects.filter(p => p.id !== req.params.id);
-        await projectStorage.save(req.userId!, filtered);
+        // 使用delete方法（如果支持）或save方法
+        if (projectStorage.delete) {
+            await projectStorage.delete(req.userId!, req.params.id);
+        } else {
+            const projects = await projectStorage.getAll(req.userId!);
+            const filtered = projects.filter(p => p.id !== req.params.id);
+            await projectStorage.save(req.userId!, filtered);
+        }
         res.json({ success: true, message: '项目已删除' });
     } catch (error: any) {
         res.status(500).json({ success: false, error: error.message });

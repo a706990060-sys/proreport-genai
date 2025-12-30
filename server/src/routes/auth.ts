@@ -35,9 +35,14 @@ router.post('/register', async (req, res) => {
             passwordHash
         };
 
-        const users = await userStorage.getAll();
-        users.push(newUser);
-        await userStorage.save(users);
+        // 使用create方法（如果支持）或save方法
+        if (userStorage.create) {
+            await userStorage.create(newUser);
+        } else {
+            const users = await userStorage.getAll();
+            users.push(newUser);
+            await userStorage.save(users);
+        }
 
         const token = jwt.sign({ userId: newUser.id }, JWT_SECRET, { expiresIn: '7d' });
 
@@ -74,9 +79,13 @@ router.post('/login', async (req, res) => {
 
         // 更新最后登录时间
         user.lastLoginAt = Date.now();
-        const users = await userStorage.getAll();
-        const updatedUsers = users.map(u => u.id === user.id ? user : u);
-        await userStorage.save(updatedUsers);
+        if (userStorage.update) {
+            await userStorage.update(user);
+        } else {
+            const users = await userStorage.getAll();
+            const updatedUsers = users.map(u => u.id === user.id ? user : u);
+            await userStorage.save(updatedUsers);
+        }
 
         const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
         console.log('登录成功，生成token:', {

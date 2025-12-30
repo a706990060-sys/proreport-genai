@@ -1,111 +1,163 @@
-import fs from 'fs/promises';
-import path from 'path';
-import { Project, ReferenceFile, ReferenceGroup, User } from '../types/index.js';
+// 存储服务选择器 - 根据环境变量选择文件系统或MongoDB
+import dotenv from 'dotenv';
+import { User, Project, ReferenceFile, ReferenceGroup } from '../types/index.js';
 
-const DATA_DIR = process.env.DATA_PATH || './data';
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-const PROJECTS_DIR = path.join(DATA_DIR, 'projects');
-const LIBRARY_DIR = path.join(DATA_DIR, 'library');
+dotenv.config();
 
-// 确保数据目录存在
-async function ensureDataDir() {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.mkdir(PROJECTS_DIR, { recursive: true });
-    await fs.mkdir(LIBRARY_DIR, { recursive: true });
+const USE_MONGODB = !!process.env.MONGODB_URI;
+
+// 动态导入存储服务
+let userStorage: any;
+let projectStorage: any;
+let libraryStorage: any;
+
+async function initStorage() {
+    if (USE_MONGODB) {
+        // 使用MongoDB
+        const mongoService = await import('./mongodbService.js');
+        userStorage = mongoService.userStorage;
+        projectStorage = mongoService.projectStorage;
+        libraryStorage = mongoService.libraryStorage;
+        console.log('📦 使用MongoDB存储');
+    } else {
+        // 使用文件系统
+        const fsService = await import('./fileStorageService.js');
+        userStorage = fsService.userStorage;
+        projectStorage = fsService.projectStorage;
+        libraryStorage = fsService.libraryStorage;
+        console.log('📁 使用文件系统存储');
+    }
 }
 
-// 用户存储
-export const userStorage = {
-    async getAll(): Promise<User[]> {
-        await ensureDataDir();
-        try {
-            const data = await fs.readFile(USERS_FILE, 'utf-8');
-            return JSON.parse(data);
-        } catch {
-            return [];
-        }
-    },
+// 确保存储已初始化
+async function ensureStorage() {
+    if (!userStorage) {
+        await initStorage();
+    }
+}
 
-    async save(users: User[]): Promise<void> {
-        await ensureDataDir();
-        await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2));
+// 导出存储服务（延迟初始化）
+export const storage = {
+    get userStorage() {
+        return {
+            async getAll(): Promise<User[]> {
+                await ensureStorage();
+                return userStorage.getAll();
+            },
+            async save(users: User[]): Promise<void> {
+                await ensureStorage();
+                return userStorage.save(users);
+            },
+            async findById(id: string): Promise<User | null> {
+                await ensureStorage();
+                return userStorage.findById(id);
+            },
+            async findByUsername(username: string): Promise<User | null> {
+                await ensureStorage();
+                return userStorage.findByUsername(username);
+            },
+            async create(user: User): Promise<void> {
+                await ensureStorage();
+                if (userStorage.create) {
+                    return userStorage.create(user);
+                } else {
+                    // 文件系统存储的兼容方法
+                    const users = await userStorage.getAll();
+                    users.push(user);
+                    return userStorage.save(users);
+                }
+            },
+            async update(user: User): Promise<void> {
+                await ensureStorage();
+                if (userStorage.update) {
+                    return userStorage.update(user);
+                } else {
+                    // 文件系统存储的兼容方法
+                    const users = await userStorage.getAll();
+                    const index = users.findIndex(u => u.id === user.id);
+                    if (index !== -1) {
+                        users[index] = user;
+                        return userStorage.save(users);
+                    }
+                }
+            }
+        };
     },
-
-    async findById(id: string): Promise<User | null> {
-        const users = await this.getAll();
-        return users.find(u => u.id === id) || null;
+    get projectStorage() {
+        return {
+            async getAll(userId: string): Promise<Project[]> {
+                await ensureStorage();
+                return projectStorage.getAll(userId);
+            },
+            async save(userId: string, projects: Project[]): Promise<void> {
+                await ensureStorage();
+                return projectStorage.save(userId, projects);
+            },
+            async findById(userId: string, projectId: string): Promise<Project | null> {
+                await ensureStorage();
+                return projectStorage.findById(userId, projectId);
+            },
+            async create(project: Project): Promise<void> {
+                await ensureStorage();
+                if (projectStorage.create) {
+                    return projectStorage.create(project);
+                } else {
+                    // 文件系统存储的兼容方法
+                    const projects = await projectStorage.getAll(project.userId);
+                    projects.push(project);
+                    return projectStorage.save(project.userId, projects);
+                }
+            },
+            async update(project: Project): Promise<void> {
+                await ensureStorage();
+                if (projectStorage.update) {
+                    return projectStorage.update(project);
+                } else {
+                    // 文件系统存储的兼容方法
+                    const projects = await projectStorage.getAll(project.userId);
+                    const index = projects.findIndex(p => p.id === project.id);
+                    if (index !== -1) {
+                        projects[index] = project;
+                        return projectStorage.save(project.userId, projects);
+                    }
+                }
+            },
+            async delete(userId: string, projectId: string): Promise<void> {
+                await ensureStorage();
+                if (projectStorage.delete) {
+                    return projectStorage.delete(userId, projectId);
+                } else {
+                    // 文件系统存储的兼容方法
+                    const projects = await projectStorage.getAll(userId);
+                    const filtered = projects.filter(p => p.id !== projectId);
+                    return projectStorage.save(userId, filtered);
+                }
+            }
+        };
     },
-
-    async findByUsername(username: string): Promise<User | null> {
-        const users = await this.getAll();
-        return users.find(u => u.username.toLowerCase() === username.toLowerCase()) || null;
+    get libraryStorage() {
+        return {
+            async getFiles(userId: string): Promise<ReferenceFile[]> {
+                await ensureStorage();
+                return libraryStorage.getFiles(userId);
+            },
+            async saveFiles(userId: string, files: ReferenceFile[]): Promise<void> {
+                await ensureStorage();
+                return libraryStorage.saveFiles(userId, files);
+            },
+            async getGroups(userId: string): Promise<ReferenceGroup[]> {
+                await ensureStorage();
+                return libraryStorage.getGroups(userId);
+            },
+            async saveGroups(userId: string, groups: ReferenceGroup[]): Promise<void> {
+                await ensureStorage();
+                return libraryStorage.saveGroups(userId, groups);
+            }
+        };
     }
 };
 
-// 项目存储
-export const projectStorage = {
-    async getAll(userId: string): Promise<Project[]> {
-        await ensureDataDir();
-        const userProjectsFile = path.join(PROJECTS_DIR, `${userId}.json`);
-        try {
-            const data = await fs.readFile(userProjectsFile, 'utf-8');
-            return JSON.parse(data);
-        } catch {
-            return [];
-        }
-    },
-
-    async save(userId: string, projects: Project[]): Promise<void> {
-        await ensureDataDir();
-        const userProjectsFile = path.join(PROJECTS_DIR, `${userId}.json`);
-        await fs.writeFile(userProjectsFile, JSON.stringify(projects, null, 2));
-    },
-
-    async findById(userId: string, projectId: string): Promise<Project | null> {
-        const projects = await this.getAll(userId);
-        return projects.find(p => p.id === projectId) || null;
-    }
-};
-
-// 资料库存储
-export const libraryStorage = {
-    async getFiles(userId: string): Promise<ReferenceFile[]> {
-        await ensureDataDir();
-        const userLibraryFile = path.join(LIBRARY_DIR, `${userId}_files.json`);
-        try {
-            const data = await fs.readFile(userLibraryFile, 'utf-8');
-            return JSON.parse(data);
-        } catch {
-            return [];
-        }
-    },
-
-    async saveFiles(userId: string, files: ReferenceFile[]): Promise<void> {
-        await ensureDataDir();
-        const userLibraryFile = path.join(LIBRARY_DIR, `${userId}_files.json`);
-        await fs.writeFile(userLibraryFile, JSON.stringify(files, null, 2));
-    },
-
-    async getGroups(userId: string): Promise<ReferenceGroup[]> {
-        await ensureDataDir();
-        const userGroupsFile = path.join(LIBRARY_DIR, `${userId}_groups.json`);
-        try {
-            const data = await fs.readFile(userGroupsFile, 'utf-8');
-            return JSON.parse(data);
-        } catch {
-            return [];
-        }
-    },
-
-    async saveGroups(userId: string, groups: ReferenceGroup[]): Promise<void> {
-        await ensureDataDir();
-        const userGroupsFile = path.join(LIBRARY_DIR, `${userId}_groups.json`);
-        await fs.writeFile(userGroupsFile, JSON.stringify(groups, null, 2));
-    }
-};
-
-
-
-
-
-
+// 为了向后兼容，导出旧的接口
+export const userStorage = storage.userStorage;
+export const projectStorage = storage.projectStorage;
+export const libraryStorage = storage.libraryStorage;
