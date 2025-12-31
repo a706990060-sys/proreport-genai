@@ -24,25 +24,50 @@ async function initializeApp() {
     try {
         console.log('开始初始化应用...');
         console.log('MONGODB_URI:', process.env.MONGODB_URI ? '已设置' : '未设置');
+        console.log('当前工作目录:', process.cwd());
+        console.log('__dirname 模拟:', import.meta.url);
         
-        // 动态导入存储服务和运行时值
-        // 使用相对路径导入（Vercel 会自动处理）
-        // @ts-ignore - 动态导入路径在运行时解析
-        const storageModule = await import('../server/src/services/storageService.js');
+        // 在 Vercel 中，includeFiles 会将 server 目录复制到 /var/task/server/
+        // 尝试多种路径
+        let storageModule;
+        try {
+            // 方法1: 相对路径（从 api/ 目录）
+            storageModule = await import('../server/src/services/storageService.js');
+        } catch (e1) {
+            console.log('方法1失败，尝试方法2...');
+            try {
+                // 方法2: 从工作目录
+                storageModule = await import('./server/src/services/storageService.js');
+            } catch (e2) {
+                console.log('方法2失败，尝试方法3...');
+                // 方法3: 绝对路径
+                storageModule = await import('/var/task/server/src/services/storageService.js');
+            }
+        }
         const userStorage = storageModule.userStorage;
         const projectStorage = storageModule.projectStorage;
         const libraryStorage = storageModule.libraryStorage;
         
-        // @ts-ignore
-        const jwtModule = await import('../server/src/config/jwt.js');
+        // @ts-ignore - 使用相同的导入策略
+        let jwtModule, authModule, geminiModule;
+        try {
+            jwtModule = await import('../server/src/config/jwt.js');
+            authModule = await import('../server/src/middleware/auth.js');
+            geminiModule = await import('../server/src/services/geminiService.js');
+        } catch (e) {
+            try {
+                jwtModule = await import('./server/src/config/jwt.js');
+                authModule = await import('./server/src/middleware/auth.js');
+                geminiModule = await import('./server/src/services/geminiService.js');
+            } catch (e2) {
+                jwtModule = await import('/var/task/server/src/config/jwt.js');
+                authModule = await import('/var/task/server/src/middleware/auth.js');
+                geminiModule = await import('/var/task/server/src/services/geminiService.js');
+            }
+        }
+        
         const JWT_SECRET = jwtModule.JWT_SECRET;
-        
-        // @ts-ignore
-        const authModule = await import('../server/src/middleware/auth.js');
         const authenticateToken = authModule.authenticateToken;
-        
-        // @ts-ignore
-        const geminiModule = await import('../server/src/services/geminiService.js');
         const generateSectionContent = geminiModule.generateSectionContent;
         const refineSectionContent = geminiModule.refineSectionContent;
 
