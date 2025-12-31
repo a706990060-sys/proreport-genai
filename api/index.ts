@@ -7,11 +7,34 @@ import dotenv from 'dotenv';
 // 加载环境变量
 dotenv.config();
 
-// 直接导入路由模块（使用相对路径）
-import authRoutes from '../server/src/routes/auth.js';
-import projectRoutes from '../server/src/routes/projects.js';
-import libraryRoutes from '../server/src/routes/library.js';
-import generateRoutes from '../server/src/routes/generate.js';
+// 动态导入路由模块（运行时解析，使用@ts-ignore忽略编译时错误）
+let authRoutes: any;
+let projectRoutes: any;
+let libraryRoutes: any;
+let generateRoutes: any;
+
+async function initRoutes() {
+    if (!authRoutes) {
+        // @ts-ignore - 动态导入，运行时解析
+        const authModule = await import('../server/src/routes/auth.js');
+        authRoutes = authModule.default;
+    }
+    if (!projectRoutes) {
+        // @ts-ignore - 动态导入，运行时解析
+        const projectModule = await import('../server/src/routes/projects.js');
+        projectRoutes = projectModule.default;
+    }
+    if (!libraryRoutes) {
+        // @ts-ignore - 动态导入，运行时解析
+        const libraryModule = await import('../server/src/routes/library.js');
+        libraryRoutes = libraryModule.default;
+    }
+    if (!generateRoutes) {
+        // @ts-ignore - 动态导入，运行时解析
+        const generateModule = await import('../server/src/routes/generate.js');
+        generateRoutes = generateModule.default;
+    }
+}
 
 // 创建Express应用
 const app = express();
@@ -52,14 +75,17 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
     });
 });
 
-// 注册路由（在函数外部，避免重复注册）
-app.use('/api/auth', authRoutes);
-app.use('/api/projects', projectRoutes);
-app.use('/api/library', libraryRoutes);
-app.use('/api/generate', generateRoutes);
-
 // Vercel Serverless Function handler
-export default function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+    // 初始化路由（如果还未初始化）
+    await initRoutes();
+    
+    // 注册路由
+    app.use('/api/auth', authRoutes);
+    app.use('/api/projects', projectRoutes);
+    app.use('/api/library', libraryRoutes);
+    app.use('/api/generate', generateRoutes);
+    
     // 将Vercel请求转换为Express请求
     return new Promise((resolve, reject) => {
         // 设置响应完成回调
