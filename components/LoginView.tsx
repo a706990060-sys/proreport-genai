@@ -21,10 +21,14 @@ const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onBackToCover }) 
         setError('');
         setLoading(true);
 
+        console.log('提交表单:', { isLoginMode, username, password: '***' });
+
         try {
             if (isLoginMode) {
                 // 登录
+                console.log('开始登录...');
                 const result = await loginUser(username, password);
+                console.log('登录结果:', result);
                 if (result.success && result.user) {
                     onLoginSuccess(result.user);
                 } else {
@@ -158,23 +162,23 @@ const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onBackToCover }) 
 
                         {/* Register Link */}
                         <div className="mt-6 text-center">
-                            <p className="text-gray-400 text-sm">
-                                还没有账号？{' '}
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setIsLoginMode(false);
-                                        setError('');
-                                        setUsername('');
-                                        setPassword('');
-                                        setEmail('');
-                                        setConfirmPassword('');
-                                    }}
-                                    className="text-orange-500 hover:text-orange-400 font-medium underline"
-                                >
-                                    立即注册
-                                </button>
+                            <p className="text-gray-400 text-sm mb-3">
+                                还没有账号？
                             </p>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsLoginMode(false);
+                                    setError('');
+                                    setUsername('');
+                                    setPassword('');
+                                    setEmail('');
+                                    setConfirmPassword('');
+                                }}
+                                className="w-full bg-orange-500 text-white py-2 px-4 rounded font-medium hover:bg-orange-600 transition-colors"
+                            >
+                                立即注册
+                            </button>
                         </div>
                     </>
                 ) : (

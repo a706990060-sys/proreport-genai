@@ -13,6 +13,17 @@ export const generateSectionContent = async (
     useSearch: boolean = false
 ): Promise<string> => {
     try {
+        console.log('generateSectionContent: 开始调用API', {
+            sectionTitle,
+            requirementLength: requirement?.length || 0,
+            userInputsLength: userInputs?.length || 0,
+            contentRefsCount: contentRefs?.length || 0,
+            formatRefsCount: formatRefs?.length || 0,
+            specRefsCount: specRefs?.length || 0,
+            knowledgeRefsCount: knowledgeRefs?.length || 0,
+            useSearch
+        });
+        
         const request: GenerateContentRequest = {
             sectionTitle,
             requirement,
@@ -23,10 +34,15 @@ export const generateSectionContent = async (
             knowledgeRefs,
             useSearch
         };
-        return await generateApi.generateSection(request);
+        
+        const result = await generateApi.generateSection(request);
+        console.log('generateSectionContent: API调用成功，返回内容长度:', result?.length || 0);
+        return result;
     } catch (error: any) {
-        console.error("Generation Failed:", error);
-        return `<div class="p-4 border border-red-200 bg-red-50 text-red-700 rounded-lg"><strong>生成中断:</strong> ${error.message || "未知API错误"}</div>`;
+        console.error("generateSectionContent: API调用失败", error);
+        // 抛出错误，让上层处理
+        const errorMessage = error?.message || error?.error || error?.toString() || "未知API错误";
+        throw new Error(`生成失败: ${errorMessage}`);
     }
 };
 
@@ -42,6 +58,18 @@ export const refineSectionContent = async (
     useSearch: boolean = false
 ): Promise<string> => {
     try {
+        console.log('refineSectionContent: 开始调用API', {
+            sectionTitle,
+            selectedTextLength: selectedText?.length || 0,
+            fullCurrentHtmlLength: fullCurrentHtml?.length || 0,
+            userInstructionLength: userInstruction?.length || 0,
+            contentRefsCount: contentRefs?.length || 0,
+            formatRefsCount: formatRefs?.length || 0,
+            specRefsCount: specRefs?.length || 0,
+            knowledgeRefsCount: knowledgeRefs?.length || 0,
+            useSearch
+        });
+        
         const request: RefineContentRequest = {
             sectionTitle,
             selectedText,
@@ -53,9 +81,14 @@ export const refineSectionContent = async (
             knowledgeRefs,
             useSearch
         };
-        return await generateApi.refineSection(request);
+        
+        const result = await generateApi.refineSection(request);
+        console.log('refineSectionContent: API调用成功，返回内容长度:', result?.length || 0);
+        return result;
     } catch (error: any) {
-        console.error("Refinement Failed:", error);
-        return fullCurrentHtml;
+        console.error("refineSectionContent: API调用失败", error);
+        // 抛出错误，让上层处理
+        const errorMessage = error?.message || error?.error || error?.toString() || "未知API错误";
+        throw new Error(`修改失败: ${errorMessage}`);
     }
 };

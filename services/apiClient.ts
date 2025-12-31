@@ -261,19 +261,54 @@ export const libraryApi = {
 // 生成API
 export const generateApi = {
     async generateSection(request: GenerateContentRequest): Promise<string> {
+        console.log('generateApi.generateSection: 发起请求', {
+            sectionTitle: request.sectionTitle,
+            requestSize: JSON.stringify(request).length
+        });
+        
         const result = await apiRequest<string>('/generate/section', {
             method: 'POST',
             body: JSON.stringify(request),
         });
-        return result.data || '';
+        
+        if (!result.success) {
+            console.error('generateApi.generateSection: 请求失败', result.error);
+            throw new Error(result.error || '生成失败');
+        }
+        
+        if (!result.data) {
+            console.warn('generateApi.generateSection: 返回数据为空');
+            throw new Error('服务器返回空内容');
+        }
+        
+        console.log('generateApi.generateSection: 请求成功，内容长度:', result.data.length);
+        return result.data;
     },
 
     async refineSection(request: RefineContentRequest): Promise<string> {
+        console.log('generateApi.refineSection: 发起请求', {
+            sectionTitle: request.sectionTitle,
+            selectedTextLength: request.selectedText?.length || 0,
+            requestSize: JSON.stringify(request).length
+        });
+        
         const result = await apiRequest<string>('/generate/refine', {
             method: 'POST',
             body: JSON.stringify(request),
         });
-        return result.data || '';
+        
+        if (!result.success) {
+            console.error('generateApi.refineSection: 请求失败', result.error);
+            throw new Error(result.error || '修改失败');
+        }
+        
+        if (!result.data) {
+            console.warn('generateApi.refineSection: 返回数据为空');
+            throw new Error('服务器返回空内容');
+        }
+        
+        console.log('generateApi.refineSection: 请求成功，内容长度:', result.data.length);
+        return result.data;
     },
 };
 

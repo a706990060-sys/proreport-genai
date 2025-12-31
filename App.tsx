@@ -875,18 +875,45 @@ const App: React.FC = () => {
     const handleStopBatch = () => { stopBatchRef.current = true; };
     
     const handleSubmit = async () => {
-        if (!activeSection) return;
+        if (!activeSection) {
+            console.error('handleSubmit: activeSection 不存在');
+            alert('请先选择一个章节');
+            return;
+        }
+        
+        console.log('handleSubmit: 开始生成内容', {
+            sectionId: activeSection.id,
+            sectionTitle: activeSection.title,
+            hasSelection: !!selectionState,
+            hasExistingContent: !!reportData[activeSection.id],
+            hasInput: !!inputValue.trim(),
+            useSearch
+        });
+        
         const refs = referenceData[activeSection.id] || {};
         setIsLoading(true);
         let finalInput = projectInfo ? `PROJECT CONTEXT: ${projectInfo}\n\nUSER INSTRUCTION: ${inputValue}` : inputValue;
+        
         try {
             if (selectionState) {
-                const updated = await refineSectionContent(activeSection.title, selectionState.text, reportData[activeSection.id] || "", inputValue, refs.content, refs.format, refs.specification, refs.knowledge, useSearch);
+                console.log('handleSubmit: 执行局部修改模式');
+                const updated = await refineSectionContent(
+                    activeSection.title, 
+                    selectionState.text, 
+                    reportData[activeSection.id] || "", 
+                    inputValue, 
+                    refs.content, 
+                    refs.format, 
+                    refs.specification, 
+                    refs.knowledge, 
+                    useSearch
+                );
                 setReportData(prev => ({ ...prev, [activeSection.id]: updated }));
                 clearSelection();
             } else if (reportData[activeSection.id] && inputValue.trim()) {
-                 const currentContent = reportData[activeSection.id];
-                 const updated = await refineSectionContent(
+                console.log('handleSubmit: 执行扩写模式');
+                const currentContent = reportData[activeSection.id];
+                const updated = await refineSectionContent(
                     activeSection.title, 
                     currentContent, 
                     currentContent, 
@@ -900,11 +927,29 @@ const App: React.FC = () => {
                 setReportData(prev => ({ ...prev, [activeSection.id]: updated }));
                 setInputValue("");
             } else {
-                const generated = await generateSectionContent(activeSection.title, activeSection.req, finalInput, refs.content, refs.format, refs.specification, refs.knowledge, useSearch);
+                console.log('handleSubmit: 执行生成模式');
+                const generated = await generateSectionContent(
+                    activeSection.title, 
+                    activeSection.req, 
+                    finalInput, 
+                    refs.content, 
+                    refs.format, 
+                    refs.specification, 
+                    refs.knowledge, 
+                    useSearch
+                );
+                console.log('handleSubmit: 生成成功，内容长度:', generated.length);
                 setReportData(prev => ({ ...prev, [activeSection.id]: (prev[activeSection.id] || "") + generated }));
                 setInputValue("");
             }
-        } catch (err) { alert("API Error"); } finally { setIsLoading(false); }
+        } catch (err: any) {
+            console.error('handleSubmit: 生成失败', err);
+            const errorMessage = err?.message || err?.error || err?.toString() || '未知错误';
+            alert(`生成失败: ${errorMessage}\n\n请检查：\n1. 网络连接是否正常\n2. 是否已登录\n3. 浏览器控制台是否有更多错误信息`);
+        } finally { 
+            setIsLoading(false);
+            console.log('handleSubmit: 完成');
+        }
     };
 
     const handleClearSectionContent = () => {

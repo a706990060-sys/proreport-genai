@@ -636,20 +636,60 @@ async function initializeApp() {
         // ========== 生成路由 ==========
         expressApp.post('/api/generate/section', authenticateToken, async (req: AuthRequest, res) => {
             try {
+                console.log('收到生成请求:', {
+                    userId: req.userId,
+                    sectionTitle: req.body?.sectionTitle,
+                    hasRequirement: !!req.body?.requirement,
+                    hasUserInputs: !!req.body?.userInputs,
+                    contentRefsCount: req.body?.contentRefs?.length || 0,
+                    formatRefsCount: req.body?.formatRefs?.length || 0,
+                    specRefsCount: req.body?.specRefs?.length || 0,
+                    knowledgeRefsCount: req.body?.knowledgeRefs?.length || 0,
+                    useSearch: req.body?.useSearch || false
+                });
+                
+                if (!req.body?.sectionTitle) {
+                    return res.status(400).json({ success: false, error: '缺少章节标题' });
+                }
+                
                 const result = await generateSectionContent(req.body);
+                console.log('生成成功，内容长度:', result?.length || 0);
                 res.json({ success: true, data: result });
             } catch (error: any) {
                 console.error('生成章节内容失败:', error);
+                console.error('错误详情:', {
+                    message: error.message,
+                    stack: error.stack,
+                    name: error.name
+                });
                 res.status(500).json({ success: false, error: error.message || '生成章节内容失败' });
             }
         });
 
         expressApp.post('/api/generate/refine', authenticateToken, async (req: AuthRequest, res) => {
             try {
+                console.log('收到修改请求:', {
+                    userId: req.userId,
+                    sectionTitle: req.body?.sectionTitle,
+                    selectedTextLength: req.body?.selectedText?.length || 0,
+                    fullCurrentHtmlLength: req.body?.fullCurrentHtml?.length || 0,
+                    userInstructionLength: req.body?.userInstruction?.length || 0
+                });
+                
+                if (!req.body?.sectionTitle) {
+                    return res.status(400).json({ success: false, error: '缺少章节标题' });
+                }
+                
                 const result = await refineSectionContent(req.body);
+                console.log('修改成功，内容长度:', result?.length || 0);
                 res.json({ success: true, data: result });
             } catch (error: any) {
                 console.error('修改/扩写章节内容失败:', error);
+                console.error('错误详情:', {
+                    message: error.message,
+                    stack: error.stack,
+                    name: error.name
+                });
                 res.status(500).json({ success: false, error: error.message || '修改/扩写章节内容失败' });
             }
         });
