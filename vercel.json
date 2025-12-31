@@ -1,5 +1,5 @@
 {
-  "buildCommand": "(cd server && npm install --no-save) && (cd server && npm run build) && npm run build:client",
+  "buildCommand": "npm run build:client",
   "outputDirectory": "dist",
   "devCommand": "npm run dev:client",
   "installCommand": "npm install",
@@ -7,7 +7,8 @@
   "functions": {
     "api/index.ts": {
       "maxDuration": 30,
-      "includeFiles": "server/dist/**"
+      "includeFiles": "server/src/**",
+      "runtime": "@vercel/node"
     }
   },
   "rewrites": [
