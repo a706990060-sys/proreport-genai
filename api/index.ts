@@ -25,19 +25,74 @@ async function initializeApp() {
         console.log('开始初始化应用...');
         console.log('MONGODB_URI:', process.env.MONGODB_URI ? '已设置' : '未设置');
         console.log('当前工作目录:', process.cwd());
-        console.log('__dirname 模拟:', import.meta.url);
+        console.log('当前文件URL:', import.meta.url);
         
-        // 在 Vercel 中，includeFiles 会将 server/src 目录复制到函数目录
-        // 直接使用源代码（Vercel 支持 TypeScript）
-        const storageModule = await import('../server/src/services/storageService.js');
+        // 尝试多种路径来找到 server 模块
+        let storageModule;
+        const pathsToTry = [
+            '../server/src/services/storageService.js',
+            './server/src/services/storageService.js',
+            '/var/task/server/src/services/storageService.js',
+            '../server/src/services/storageService.ts',
+            './server/src/services/storageService.ts'
+        ];
+        
+        let lastError: any = null;
+        for (const path of pathsToTry) {
+            try {
+                console.log(`尝试导入: ${path}`);
+                storageModule = await import(path);
+                console.log(`✅ 成功导入: ${path}`);
+                break;
+            } catch (e: any) {
+                console.log(`❌ 失败: ${path} - ${e.message}`);
+                lastError = e;
+            }
+        }
+        
+        if (!storageModule) {
+            throw new Error(`无法导入 storageService，尝试了所有路径。最后错误: ${lastError?.message}`);
+        }
         const userStorage = storageModule.userStorage;
         const projectStorage = storageModule.projectStorage;
         const libraryStorage = storageModule.libraryStorage;
         
-        // @ts-ignore - 直接使用源代码
-        const jwtModule = await import('../server/src/config/jwt.js');
-        const authModule = await import('../server/src/middleware/auth.js');
-        const geminiModule = await import('../server/src/services/geminiService.js');
+        // @ts-ignore - 尝试多种路径
+        let jwtModule, authModule, geminiModule;
+        const jwtPaths = ['../server/src/config/jwt.js', './server/src/config/jwt.js', '/var/task/server/src/config/jwt.js'];
+        const authPaths = ['../server/src/middleware/auth.js', './server/src/middleware/auth.js', '/var/task/server/src/middleware/auth.js'];
+        const geminiPaths = ['../server/src/services/geminiService.js', './server/src/services/geminiService.js', '/var/task/server/src/services/geminiService.js'];
+        
+        for (const path of jwtPaths) {
+            try {
+                jwtModule = await import(path);
+                break;
+            } catch (e) {
+                continue;
+            }
+        }
+        
+        for (const path of authPaths) {
+            try {
+                authModule = await import(path);
+                break;
+            } catch (e) {
+                continue;
+            }
+        }
+        
+        for (const path of geminiPaths) {
+            try {
+                geminiModule = await import(path);
+                break;
+            } catch (e) {
+                continue;
+            }
+        }
+        
+        if (!jwtModule || !authModule || !geminiModule) {
+            throw new Error('无法导入必要的模块');
+        }
         
         const JWT_SECRET = jwtModule.JWT_SECRET;
         const authenticateToken = authModule.authenticateToken;
