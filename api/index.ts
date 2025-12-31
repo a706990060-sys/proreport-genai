@@ -318,7 +318,21 @@ ${refPrompt}
         return cleanResponse(rawText) + (request.useSearch ? formatSources(response) : "");
     } catch (error: any) {
         console.error("Gemini Generation Failed:", error);
-        throw new Error(`生成中断: ${error.message || "未知API错误"}`);
+        
+        // 检查是否是 API 密钥泄露错误
+        if (error?.error?.code === 403 || error?.code === 403) {
+            const errorMsg = error?.error?.message || error?.message || '';
+            if (errorMsg.includes('leaked') || errorMsg.includes('reported')) {
+                throw new Error('API 密钥已被标记为泄露，请更换新的 API 密钥。步骤：1) 访问 https://aistudio.google.com/ 创建新密钥 2) 在 Vercel 环境变量中更新 GEMINI_API_KEY 3) 重新部署');
+            }
+        }
+        
+        // 检查是否是权限错误
+        if (error?.error?.status === 'PERMISSION_DENIED' || error?.status === 'PERMISSION_DENIED') {
+            throw new Error('API 密钥权限被拒绝。请检查：1) API 密钥是否正确 2) 是否已启用 Gemini API 3) 密钥是否被禁用');
+        }
+        
+        throw new Error(`生成中断: ${error?.error?.message || error?.message || "未知API错误"}`);
     }
 }
 
@@ -383,7 +397,21 @@ ${refPrompt}
         return cleanResponse(response.text) || request.fullCurrentHtml;
     } catch (error: any) {
         console.error("Gemini Refinement Failed:", error);
-        throw new Error(`生成中断: ${error.message || "未知API错误"}`);
+        
+        // 检查是否是 API 密钥泄露错误
+        if (error?.error?.code === 403 || error?.code === 403) {
+            const errorMsg = error?.error?.message || error?.message || '';
+            if (errorMsg.includes('leaked') || errorMsg.includes('reported')) {
+                throw new Error('API 密钥已被标记为泄露，请更换新的 API 密钥。步骤：1) 访问 https://aistudio.google.com/ 创建新密钥 2) 在 Vercel 环境变量中更新 GEMINI_API_KEY 3) 重新部署');
+            }
+        }
+        
+        // 检查是否是权限错误
+        if (error?.error?.status === 'PERMISSION_DENIED' || error?.status === 'PERMISSION_DENIED') {
+            throw new Error('API 密钥权限被拒绝。请检查：1) API 密钥是否正确 2) 是否已启用 Gemini API 3) 密钥是否被禁用');
+        }
+        
+        throw new Error(`生成中断: ${error?.error?.message || error?.message || "未知API错误"}`);
     }
 }
 
