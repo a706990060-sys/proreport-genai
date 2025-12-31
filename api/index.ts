@@ -7,31 +7,11 @@ import dotenv from 'dotenv';
 // 加载环境变量
 dotenv.config();
 
-// 动态导入路由模块
-let authRoutes: any;
-let projectRoutes: any;
-let libraryRoutes: any;
-let generateRoutes: any;
-
-// 在函数外部初始化路由（避免重复加载）
-async function initRoutes() {
-    if (!authRoutes) {
-        const authModule = await import('../server/src/routes/auth.js');
-        authRoutes = authModule.default;
-    }
-    if (!projectRoutes) {
-        const projectModule = await import('../server/src/routes/projects.js');
-        projectRoutes = projectModule.default;
-    }
-    if (!libraryRoutes) {
-        const libraryModule = await import('../server/src/routes/library.js');
-        libraryRoutes = libraryModule.default;
-    }
-    if (!generateRoutes) {
-        const generateModule = await import('../server/src/routes/generate.js');
-        generateRoutes = generateModule.default;
-    }
-}
+// 直接导入路由模块（使用相对路径）
+import authRoutes from '../server/src/routes/auth.js';
+import projectRoutes from '../server/src/routes/projects.js';
+import libraryRoutes from '../server/src/routes/library.js';
+import generateRoutes from '../server/src/routes/generate.js';
 
 // 创建Express应用
 const app = express();
@@ -72,17 +52,14 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
     });
 });
 
+// 注册路由（在函数外部，避免重复注册）
+app.use('/api/auth', authRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/library', libraryRoutes);
+app.use('/api/generate', generateRoutes);
+
 // Vercel Serverless Function handler
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-    // 初始化路由（如果还未初始化）
-    await initRoutes();
-    
-    // 注册路由
-    app.use('/api/auth', authRoutes);
-    app.use('/api/projects', projectRoutes);
-    app.use('/api/library', libraryRoutes);
-    app.use('/api/generate', generateRoutes);
-    
+export default function handler(req: VercelRequest, res: VercelResponse) {
     // 将Vercel请求转换为Express请求
     return new Promise((resolve, reject) => {
         // 设置响应完成回调
