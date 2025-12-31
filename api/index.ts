@@ -34,15 +34,15 @@ async function initializeApp() {
         const libraryStorage = storageModule.libraryStorage;
         
         // @ts-ignore
-        const jwtModule = await import(new URL('../server/src/config/jwt.js', import.meta.url).href);
+        const jwtModule = await import('../server/src/config/jwt.js');
         const JWT_SECRET = jwtModule.JWT_SECRET;
         
         // @ts-ignore
-        const authModule = await import(new URL('../server/src/middleware/auth.js', import.meta.url).href);
+        const authModule = await import('../server/src/middleware/auth.js');
         const authenticateToken = authModule.authenticateToken;
         
         // @ts-ignore
-        const geminiModule = await import(new URL('../server/src/services/geminiService.js', import.meta.url).href);
+        const geminiModule = await import('../server/src/services/geminiService.js');
         const generateSectionContent = geminiModule.generateSectionContent;
         const refineSectionContent = geminiModule.refineSectionContent;
 
