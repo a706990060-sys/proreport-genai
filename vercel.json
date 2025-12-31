@@ -1,13 +1,13 @@
 {
-  "buildCommand": "npm run build:client",
+  "buildCommand": "npm run build:server && npm run build:client",
   "outputDirectory": "dist",
   "devCommand": "npm run dev:client",
-  "installCommand": "npm install",
+  "installCommand": "npm install && cd server && npm install",
   "framework": "vite",
   "functions": {
     "api/index.ts": {
       "maxDuration": 30,
-      "includeFiles": "server/**"
+      "includeFiles": "server/dist/**"
     }
   },
   "rewrites": [
