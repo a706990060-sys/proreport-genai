@@ -5,7 +5,6 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-
 // 静态导入类型（使用本地类型定义文件）
 import type { User, Project, ReferenceFile, ReferenceGroup, AuthRequest } from './types.js';
 
@@ -23,23 +22,33 @@ async function initializeApp() {
     }
 
     try {
+        // 在 Vercel 中，api/index.js 在 /var/task/api/，server 应该在 /var/task/server/
+        // 使用 file:// URL 来导入模块
+        const serverBaseUrl = `file://${path.join(__dirname, '..', 'server', 'src')}`;
+        
+        console.log('尝试导入模块');
+        console.log('当前文件路径:', __filename);
+        console.log('当前目录:', __dirname);
+        console.log('Server基础URL:', serverBaseUrl);
+        
         // 动态导入存储服务和运行时值
-        // @ts-ignore - 动态导入路径在运行时解析，TypeScript无法在构建时检查
-        const storageModule = await import('../server/src/services/storageService.js');
+        // 使用 file:// URL 格式
+        // @ts-ignore - 动态导入路径在运行时解析
+        const storageModule = await import(new URL('../server/src/services/storageService.js', import.meta.url).href);
         const userStorage = storageModule.userStorage;
         const projectStorage = storageModule.projectStorage;
         const libraryStorage = storageModule.libraryStorage;
         
         // @ts-ignore
-        const jwtModule = await import('../server/src/config/jwt.js');
+        const jwtModule = await import(new URL('../server/src/config/jwt.js', import.meta.url).href);
         const JWT_SECRET = jwtModule.JWT_SECRET;
         
         // @ts-ignore
-        const authModule = await import('../server/src/middleware/auth.js');
+        const authModule = await import(new URL('../server/src/middleware/auth.js', import.meta.url).href);
         const authenticateToken = authModule.authenticateToken;
         
         // @ts-ignore
-        const geminiModule = await import('../server/src/services/geminiService.js');
+        const geminiModule = await import(new URL('../server/src/services/geminiService.js', import.meta.url).href);
         const generateSectionContent = geminiModule.generateSectionContent;
         const refineSectionContent = geminiModule.refineSectionContent;
 
