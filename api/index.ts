@@ -6,6 +6,9 @@ import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
+// 静态导入类型（使用本地类型定义文件）
+import type { User, Project, ReferenceFile, ReferenceGroup, AuthRequest } from './types.js';
+
 // 加载环境变量
 dotenv.config();
 
@@ -20,25 +23,22 @@ async function initializeApp() {
     }
 
     try {
-        // 动态导入存储服务和类型
+        // 动态导入存储服务和运行时值
+        // @ts-ignore - 动态导入路径在运行时解析，TypeScript无法在构建时检查
         const storageModule = await import('../server/src/services/storageService.js');
         const userStorage = storageModule.userStorage;
         const projectStorage = storageModule.projectStorage;
         const libraryStorage = storageModule.libraryStorage;
         
+        // @ts-ignore
         const jwtModule = await import('../server/src/config/jwt.js');
         const JWT_SECRET = jwtModule.JWT_SECRET;
         
+        // @ts-ignore
         const authModule = await import('../server/src/middleware/auth.js');
         const authenticateToken = authModule.authenticateToken;
-        const AuthRequest = authModule.AuthRequest;
         
-        const typesModule = await import('../server/src/types/index.js');
-        const User = typesModule.User;
-        const Project = typesModule.Project;
-        const ReferenceFile = typesModule.ReferenceFile;
-        const ReferenceGroup = typesModule.ReferenceGroup;
-        
+        // @ts-ignore
         const geminiModule = await import('../server/src/services/geminiService.js');
         const generateSectionContent = geminiModule.generateSectionContent;
         const refineSectionContent = geminiModule.refineSectionContent;
@@ -81,7 +81,7 @@ async function initializeApp() {
                 }
 
                 const passwordHash = await bcrypt.hash(password, 10);
-                const newUser: any = {
+                const newUser: User = {
                     id: 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
                     username: username.trim(),
                     email: email?.trim(),
@@ -155,7 +155,7 @@ async function initializeApp() {
             }
         });
 
-        expressApp.get('/api/auth/me', authenticateToken, async (req: any, res) => {
+        expressApp.get('/api/auth/me', authenticateToken, async (req: AuthRequest, res) => {
             try {
                 const user = await userStorage.findById(req.userId!);
                 if (!user) {
@@ -173,7 +173,7 @@ async function initializeApp() {
         });
 
         // ========== 项目路由 ==========
-        expressApp.get('/api/projects', authenticateToken, async (req: any, res) => {
+        expressApp.get('/api/projects', authenticateToken, async (req: AuthRequest, res) => {
             try {
                 const projects = await projectStorage.getAll(req.userId!);
                 res.json({ success: true, data: projects });
@@ -183,7 +183,7 @@ async function initializeApp() {
             }
         });
 
-        expressApp.get('/api/projects/:id', authenticateToken, async (req: any, res) => {
+        expressApp.get('/api/projects/:id', authenticateToken, async (req: AuthRequest, res) => {
             try {
                 const project = await projectStorage.findById(req.userId!, req.params.id);
                 if (!project) {
@@ -196,9 +196,9 @@ async function initializeApp() {
             }
         });
 
-        expressApp.post('/api/projects', authenticateToken, async (req: any, res) => {
+        expressApp.post('/api/projects', authenticateToken, async (req: AuthRequest, res) => {
             try {
-                const project: any = {
+                const project: Project = {
                     ...req.body,
                     id: 'proj-' + Date.now(),
                     userId: req.userId!,
@@ -221,9 +221,9 @@ async function initializeApp() {
             }
         });
 
-        expressApp.put('/api/projects/:id', authenticateToken, async (req: any, res) => {
+        expressApp.put('/api/projects/:id', authenticateToken, async (req: AuthRequest, res) => {
             try {
-                const updatedProject: any = {
+                const updatedProject: Project = {
                     ...req.body,
                     id: req.params.id,
                     userId: req.userId!,
@@ -249,7 +249,7 @@ async function initializeApp() {
             }
         });
 
-        expressApp.delete('/api/projects/:id', authenticateToken, async (req: any, res) => {
+        expressApp.delete('/api/projects/:id', authenticateToken, async (req: AuthRequest, res) => {
             try {
                 if (projectStorage.delete) {
                     await projectStorage.delete(req.userId!, req.params.id);
@@ -267,7 +267,7 @@ async function initializeApp() {
         });
 
         // ========== 资料库路由 ==========
-        expressApp.get('/api/library/files', authenticateToken, async (req: any, res) => {
+        expressApp.get('/api/library/files', authenticateToken, async (req: AuthRequest, res) => {
             try {
                 const files = await libraryStorage.getFiles(req.userId!);
                 res.json({ success: true, data: files });
@@ -277,7 +277,7 @@ async function initializeApp() {
             }
         });
 
-        expressApp.post('/api/library/files', authenticateToken, async (req: any, res) => {
+        expressApp.post('/api/library/files', authenticateToken, async (req: AuthRequest, res) => {
             try {
                 const files: ReferenceFile[] = req.body;
                 await libraryStorage.saveFiles(req.userId!, files);
@@ -288,7 +288,7 @@ async function initializeApp() {
             }
         });
 
-        expressApp.get('/api/library/groups', authenticateToken, async (req: any, res) => {
+        expressApp.get('/api/library/groups', authenticateToken, async (req: AuthRequest, res) => {
             try {
                 const groups = await libraryStorage.getGroups(req.userId!);
                 res.json({ success: true, data: groups });
@@ -298,7 +298,7 @@ async function initializeApp() {
             }
         });
 
-        expressApp.post('/api/library/groups', authenticateToken, async (req: any, res) => {
+        expressApp.post('/api/library/groups', authenticateToken, async (req: AuthRequest, res) => {
             try {
                 const groups: ReferenceGroup[] = req.body;
                 await libraryStorage.saveGroups(req.userId!, groups);
@@ -310,7 +310,7 @@ async function initializeApp() {
         });
 
         // ========== 生成路由 ==========
-        expressApp.post('/api/generate/section', authenticateToken, async (req: any, res) => {
+        expressApp.post('/api/generate/section', authenticateToken, async (req: AuthRequest, res) => {
             try {
                 const result = await generateSectionContent(req.body);
                 res.json({ success: true, data: result });
@@ -320,7 +320,7 @@ async function initializeApp() {
             }
         });
 
-        expressApp.post('/api/generate/refine', authenticateToken, async (req: any, res) => {
+        expressApp.post('/api/generate/refine', authenticateToken, async (req: AuthRequest, res) => {
             try {
                 const result = await refineSectionContent(req.body);
                 res.json({ success: true, data: result });

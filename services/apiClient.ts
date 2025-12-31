@@ -2,24 +2,45 @@ import { User, Project, ReferenceFile, ReferenceGroup, GenerateContentRequest, R
 
 // 自动检测API地址
 const getApiBaseUrl = (): string => {
-    const env = (import.meta as any).env;
-    
-    // 优先使用环境变量（如果配置了）
-    if (env?.VITE_API_URL) {
-        return env.VITE_API_URL;
-    }
-    
-    // 开发环境：使用代理
-    if (env?.DEV) {
+    // 检查是否在浏览器环境
+    if (typeof window === 'undefined') {
         return '/api';
     }
     
-    // 生产环境：使用相对路径（前后端同域名）
-    // 由于前后端都部署在Vercel，使用相对路径即可
+    // 优先使用环境变量（如果配置了）
+    const envUrl = (import.meta as any).env?.VITE_API_URL;
+    if (envUrl && envUrl !== 'http://localhost:3001/api') {
+        console.log('使用环境变量API URL:', envUrl);
+        return envUrl;
+    }
+    
+    // 检查hostname，判断是否为本地开发环境
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '';
+    
+    // 本地开发环境：使用代理（Vite会代理到localhost:3001）
+    if (isLocalhost && window.location.port === '3000') {
+        console.log('检测到本地开发环境，使用代理: /api');
+        return '/api';
+    }
+    
+    // 生产环境（包括Vercel）：始终使用相对路径 /api
+    console.log('使用生产环境API路径: /api (hostname:', hostname, ')');
     return '/api';
 };
 
+// 在运行时计算API地址（避免构建时内联）
 const API_BASE_URL = getApiBaseUrl();
+
+// 调试日志
+if (typeof window !== 'undefined') {
+    console.log('=== API配置信息 ===');
+    console.log('API_BASE_URL:', API_BASE_URL);
+    console.log('当前hostname:', window.location.hostname);
+    console.log('当前URL:', window.location.href);
+    console.log('环境变量VITE_API_URL:', (import.meta as any).env?.VITE_API_URL || '未设置');
+    console.log('==================');
+}
 
 // 获取认证token
 const getToken = (): string | null => {
@@ -55,7 +76,13 @@ async function apiRequest<T>(
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        // 每次请求时重新计算API地址（确保使用最新值）
+        const apiUrl = getApiBaseUrl();
+        const fullUrl = `${apiUrl}${endpoint}`;
+        
+        console.log(`发起API请求: ${fullUrl}`);
+        
+        const response = await fetch(fullUrl, {
             ...options,
             headers,
         });

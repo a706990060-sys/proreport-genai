@@ -7,11 +7,19 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "baseUrl": "..",
+    "paths": {
+      "../server/src/*": ["../server/src/*"]
+    },
+    "types": ["node", "@vercel/node"]
   },
   "include": [
     "**/*.ts",
     "../server/src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
   ]
 }
 
