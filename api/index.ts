@@ -22,19 +22,13 @@ async function initializeApp() {
     }
 
     try {
-        // 在 Vercel 中，api/index.js 在 /var/task/api/，server 应该在 /var/task/server/
-        // 使用 file:// URL 来导入模块
-        const serverBaseUrl = `file://${path.join(__dirname, '..', 'server', 'src')}`;
-        
-        console.log('尝试导入模块');
-        console.log('当前文件路径:', __filename);
-        console.log('当前目录:', __dirname);
-        console.log('Server基础URL:', serverBaseUrl);
+        console.log('开始初始化应用...');
+        console.log('MONGODB_URI:', process.env.MONGODB_URI ? '已设置' : '未设置');
         
         // 动态导入存储服务和运行时值
-        // 使用 file:// URL 格式
+        // 使用相对路径导入（Vercel 会自动处理）
         // @ts-ignore - 动态导入路径在运行时解析
-        const storageModule = await import(new URL('../server/src/services/storageService.js', import.meta.url).href);
+        const storageModule = await import('../server/src/services/storageService.js');
         const userStorage = storageModule.userStorage;
         const projectStorage = storageModule.projectStorage;
         const libraryStorage = storageModule.libraryStorage;

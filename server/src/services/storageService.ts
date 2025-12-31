@@ -12,6 +12,9 @@ let projectStorage: any;
 let libraryStorage: any;
 
 async function initStorage() {
+    // 在 Vercel 等 Serverless 环境中，强制使用 MongoDB
+    const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV;
+    
     if (USE_MONGODB) {
         // 使用MongoDB
         const mongoService = await import('./mongodbService.js');
@@ -19,13 +22,16 @@ async function initStorage() {
         projectStorage = mongoService.projectStorage;
         libraryStorage = mongoService.libraryStorage;
         console.log('📦 使用MongoDB存储');
+    } else if (isVercel) {
+        // 在 Vercel 环境中，如果没有 MONGODB_URI，抛出错误
+        throw new Error('MONGODB_URI 环境变量未设置。在 Vercel 部署中必须使用 MongoDB。请在 Vercel 项目设置中配置 MONGODB_URI 环境变量。');
     } else {
-        // 使用文件系统
+        // 本地开发环境可以使用文件系统
         const fsService = await import('./fileStorageService.js');
         userStorage = fsService.userStorage;
         projectStorage = fsService.projectStorage;
         libraryStorage = fsService.libraryStorage;
-        console.log('📁 使用文件系统存储');
+        console.log('📁 使用文件系统存储（本地开发）');
     }
 }
 
