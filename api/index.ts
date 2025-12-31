@@ -252,7 +252,9 @@ const prepareReferenceContext = (
 async function generateSectionContent(request: GenerateContentRequest): Promise<string> {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-        throw new Error('GEMINI_API_KEY is not configured');
+        console.error('❌ GEMINI_API_KEY 未配置');
+        console.error('请在 Vercel 项目设置中配置 GEMINI_API_KEY 环境变量');
+        throw new Error('GEMINI_API_KEY 未配置。请在 Vercel 项目设置 → Environment Variables 中添加 GEMINI_API_KEY。获取密钥：https://aistudio.google.com/');
     }
 
     const ai = new GoogleGenAI({ apiKey });
@@ -323,7 +325,9 @@ ${refPrompt}
 async function refineSectionContent(request: RefineContentRequest): Promise<string> {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-        throw new Error('GEMINI_API_KEY is not configured');
+        console.error('❌ GEMINI_API_KEY 未配置');
+        console.error('请在 Vercel 项目设置中配置 GEMINI_API_KEY 环境变量');
+        throw new Error('GEMINI_API_KEY 未配置。请在 Vercel 项目设置 → Environment Variables 中添加 GEMINI_API_KEY。获取密钥：https://aistudio.google.com/');
     }
 
     const ai = new GoogleGenAI({ apiKey });
