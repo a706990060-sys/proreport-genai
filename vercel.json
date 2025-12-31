@@ -7,11 +7,7 @@
   "functions": {
     "api/index.ts": {
       "maxDuration": 30,
-      "includeFiles": [
-        "server/src/**",
-        "server/package.json",
-        "server/tsconfig.json"
-      ]
+      "includeFiles": "server/**"
     }
   },
   "rewrites": [
