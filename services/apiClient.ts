@@ -2,8 +2,9 @@ import { User, Project, ReferenceFile, ReferenceGroup, GenerateContentRequest, R
 
 // 自动检测API地址
 const getApiBaseUrl = (): string => {
-    // 生产环境：使用环境变量或自动检测
     const env = (import.meta as any).env;
+    
+    // 优先使用环境变量（如果配置了）
     if (env?.VITE_API_URL) {
         return env.VITE_API_URL;
     }
@@ -13,15 +14,9 @@ const getApiBaseUrl = (): string => {
         return '/api';
     }
     
-    // 生产环境但未配置：尝试从当前域名推断
-    if (typeof window !== 'undefined') {
-        const hostname = window.location.hostname;
-        // 如果是Vercel部署，后端应该在Railway
-        // 这里需要手动配置，或使用环境变量
-        return '/api'; // 默认使用相对路径（需要Nginx代理）
-    }
-    
-    return 'http://localhost:3001/api';
+    // 生产环境：使用相对路径（前后端同域名）
+    // 由于前后端都部署在Vercel，使用相对路径即可
+    return '/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();
