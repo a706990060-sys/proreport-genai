@@ -27,49 +27,17 @@ async function initializeApp() {
         console.log('当前工作目录:', process.cwd());
         console.log('__dirname 模拟:', import.meta.url);
         
-        // 在 Vercel 中，includeFiles 会将编译后的 server/dist 目录复制到函数目录
-        // 尝试多种路径（优先使用编译后的 dist 目录）
-        let storageModule;
-        try {
-            // 方法1: 编译后的文件（从 api/ 目录）
-            storageModule = await import('../server/dist/services/storageService.js');
-        } catch (e1) {
-            console.log('方法1失败（dist），尝试方法2（src）...', e1.message);
-            try {
-                // 方法2: 源代码路径（备用）
-                storageModule = await import('../server/src/services/storageService.js');
-            } catch (e2) {
-                console.log('方法2失败，尝试方法3（绝对路径）...', e2.message);
-                try {
-                    // 方法3: 绝对路径 dist
-                    storageModule = await import('/var/task/server/dist/services/storageService.js');
-                } catch (e3) {
-                    // 方法4: 绝对路径 src
-                    storageModule = await import('/var/task/server/src/services/storageService.js');
-                }
-            }
-        }
+        // 在 Vercel 中，includeFiles 会将 server/src 目录复制到函数目录
+        // 直接使用源代码（Vercel 支持 TypeScript）
+        const storageModule = await import('../server/src/services/storageService.js');
         const userStorage = storageModule.userStorage;
         const projectStorage = storageModule.projectStorage;
         const libraryStorage = storageModule.libraryStorage;
         
-        // @ts-ignore - 使用相同的导入策略（优先使用编译后的 dist）
-        let jwtModule, authModule, geminiModule;
-        try {
-            jwtModule = await import('../server/dist/config/jwt.js');
-            authModule = await import('../server/dist/middleware/auth.js');
-            geminiModule = await import('../server/dist/services/geminiService.js');
-        } catch (e) {
-            try {
-                jwtModule = await import('../server/src/config/jwt.js');
-                authModule = await import('../server/src/middleware/auth.js');
-                geminiModule = await import('../server/src/services/geminiService.js');
-            } catch (e2) {
-                jwtModule = await import('/var/task/server/dist/config/jwt.js');
-                authModule = await import('/var/task/server/dist/middleware/auth.js');
-                geminiModule = await import('/var/task/server/dist/services/geminiService.js');
-            }
-        }
+        // @ts-ignore - 直接使用源代码
+        const jwtModule = await import('../server/src/config/jwt.js');
+        const authModule = await import('../server/src/middleware/auth.js');
+        const geminiModule = await import('../server/src/services/geminiService.js');
         
         const JWT_SECRET = jwtModule.JWT_SECRET;
         const authenticateToken = authModule.authenticateToken;
