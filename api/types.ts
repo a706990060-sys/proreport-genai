@@ -44,3 +44,28 @@ export interface AuthRequest extends Request {
     userId?: string;
 }
 
+// 生成内容请求类型
+export interface GenerateContentRequest {
+    sectionTitle: string;
+    requirement: string;
+    userInputs: string;
+    contentRefs?: ReferenceFile[];
+    formatRefs?: ReferenceFile[];
+    specRefs?: ReferenceFile[];
+    knowledgeRefs?: ReferenceFile[];
+    useSearch?: boolean;
+}
+
+// 修改内容请求类型
+export interface RefineContentRequest {
+    sectionTitle: string;
+    selectedText: string;
+    fullCurrentHtml: string;
+    userInstruction: string;
+    contentRefs?: ReferenceFile[];
+    formatRefs?: ReferenceFile[];
+    specRefs?: ReferenceFile[];
+    knowledgeRefs?: ReferenceFile[];
+    useSearch?: boolean;
+}
+

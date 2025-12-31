@@ -667,6 +667,7 @@ async function initializeApp() {
 
         // ========== 生成路由 ==========
         expressApp.post('/api/generate/section', authenticateToken, async (req: AuthRequest, res) => {
+            const startTime = Date.now();
             try {
                 console.log('收到生成请求:', {
                     userId: req.userId,
@@ -684,21 +685,43 @@ async function initializeApp() {
                     return res.status(400).json({ success: false, error: '缺少章节标题' });
                 }
                 
-                const result = await generateSectionContent(req.body);
-                console.log('生成成功，内容长度:', result?.length || 0);
+                // 设置超时保护（50秒，留出缓冲时间）
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('生成超时：内容生成时间过长，请尝试简化要求或减少参考文件')), 50000);
+                });
+                
+                const result = await Promise.race([
+                    generateSectionContent(req.body),
+                    timeoutPromise
+                ]) as string;
+                
+                const duration = Date.now() - startTime;
+                console.log(`生成成功，内容长度: ${result?.length || 0}, 耗时: ${duration}ms`);
                 res.json({ success: true, data: result });
             } catch (error: any) {
+                const duration = Date.now() - startTime;
                 console.error('生成章节内容失败:', error);
                 console.error('错误详情:', {
                     message: error.message,
                     stack: error.stack,
-                    name: error.name
+                    name: error.name,
+                    duration: `${duration}ms`
                 });
+                
+                // 检查是否是超时错误
+                if (error.message?.includes('超时') || error.message?.includes('timeout') || duration > 55000) {
+                    return res.status(504).json({ 
+                        success: false, 
+                        error: '生成超时：内容生成时间过长。建议：1) 简化生成要求 2) 减少参考文件数量 3) 关闭联网搜索' 
+                    });
+                }
+                
                 res.status(500).json({ success: false, error: error.message || '生成章节内容失败' });
             }
         });
 
         expressApp.post('/api/generate/refine', authenticateToken, async (req: AuthRequest, res) => {
+            const startTime = Date.now();
             try {
                 console.log('收到修改请求:', {
                     userId: req.userId,
@@ -712,16 +735,37 @@ async function initializeApp() {
                     return res.status(400).json({ success: false, error: '缺少章节标题' });
                 }
                 
-                const result = await refineSectionContent(req.body);
-                console.log('修改成功，内容长度:', result?.length || 0);
+                // 设置超时保护（50秒，留出缓冲时间）
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('修改超时：内容修改时间过长，请尝试简化要求')), 50000);
+                });
+                
+                const result = await Promise.race([
+                    refineSectionContent(req.body),
+                    timeoutPromise
+                ]) as string;
+                
+                const duration = Date.now() - startTime;
+                console.log(`修改成功，内容长度: ${result?.length || 0}, 耗时: ${duration}ms`);
                 res.json({ success: true, data: result });
             } catch (error: any) {
+                const duration = Date.now() - startTime;
                 console.error('修改/扩写章节内容失败:', error);
                 console.error('错误详情:', {
                     message: error.message,
                     stack: error.stack,
-                    name: error.name
+                    name: error.name,
+                    duration: `${duration}ms`
                 });
+                
+                // 检查是否是超时错误
+                if (error.message?.includes('超时') || error.message?.includes('timeout') || duration > 55000) {
+                    return res.status(504).json({ 
+                        success: false, 
+                        error: '修改超时：内容修改时间过长。建议：1) 简化修改要求 2) 减少参考文件数量 3) 关闭联网搜索' 
+                    });
+                }
+                
                 res.status(500).json({ success: false, error: error.message || '修改/扩写章节内容失败' });
             }
         });
